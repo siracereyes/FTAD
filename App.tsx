@@ -1,12 +1,10 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchFTADData } from './services/dataService';
-import { getAIInsights } from './services/geminiService';
 import { TARecord, FTADStats } from './types';
 import StatCard from './components/StatCard';
 import DataTable from './components/DataTable';
 import { 
-  RefreshCw, BrainCircuit, Database, Activity, 
+  RefreshCw, Database, Activity, 
   Target, Building2, Info
 } from 'lucide-react';
 
@@ -15,8 +13,6 @@ const LOGO_URL = "https://depedcaloocan.com/wp-content/uploads/2025/07/webtap.pn
 const App: React.FC = () => {
   const [data, setData] = useState<TARecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [insights, setInsights] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
@@ -66,38 +62,6 @@ const App: React.FC = () => {
       uniqueEntities
     };
   }, [data]);
-
-  const topDivisions = useMemo(() => {
-    const counts: Record<string, number> = {};
-    data.forEach(r => {
-      if (r.divisionSchool) {
-        counts[r.divisionSchool] = (counts[r.divisionSchool] || 0) + 1;
-      }
-    });
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([name, count]) => ({ name, count }));
-  }, [data]);
-
-  const topCategories = useMemo(() => {
-    return [
-      { name: 'Access', count: data.reduce((acc, r) => acc + r.access.length, 0) },
-      { name: 'Equity', count: data.reduce((acc, r) => acc + r.equity.length, 0) },
-      { name: 'Quality', count: data.reduce((acc, r) => acc + r.quality.length, 0) },
-      { name: 'Resilience', count: data.reduce((acc, r) => acc + r.resilience.length, 0) },
-      { name: 'Enabling', count: data.reduce((acc, r) => acc + r.enabling.length, 0) },
-    ].sort((a, b) => b.count - a.count);
-  }, [data]);
-
-  const triggerAI = async () => {
-    if (data.length === 0) return;
-    setAiLoading(true);
-    // Fix: Pass the stats object directly to the getAIInsights service now that field names match.
-    const result = await getAIInsights(stats, topDivisions, topCategories);
-    setInsights(result);
-    setAiLoading(false);
-  };
 
   return (
     <div className="min-h-screen bg-[#FDFDFF] pb-20">
@@ -151,14 +115,6 @@ const App: React.FC = () => {
               Analyzing Technical Assistance interventions across {stats.uniqueEntities} unique institutional entities.
             </p>
           </div>
-          <button 
-            onClick={triggerAI}
-            disabled={aiLoading || data.length === 0}
-            className="px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black hover:bg-slate-800 transition-all shadow-2xl shadow-slate-900/20 flex items-center gap-3 disabled:opacity-70 group"
-          >
-            <BrainCircuit size={24} className="group-hover:rotate-12 transition-transform text-teal-400" />
-            {aiLoading ? 'SYNTHESIZING...' : 'GENERATE STRATEGIC REPORT'}
-          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
@@ -184,26 +140,6 @@ const App: React.FC = () => {
             icon={<Building2 size={24} />}
           />
         </div>
-
-        {insights && (
-          <div className="mb-16 bg-indigo-900 rounded-[3rem] p-10 text-white relative overflow-hidden shadow-3xl shadow-indigo-900/20 animate-in zoom-in duration-500">
-             <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md">
-                    <BrainCircuit size={32} className="text-teal-400" />
-                  </div>
-                  <h3 className="text-2xl font-black tracking-tight">AI Executive Summary</h3>
-                </div>
-                <div className="columns-1 md:columns-2 gap-12 text-indigo-50 text-base leading-relaxed font-medium">
-                  {insights.split('\n').filter(l => l.trim()).map((line, i) => (
-                    <p key={i} className="mb-6 border-l-4 border-teal-500/30 pl-6 py-2 bg-white/5 rounded-r-2xl">
-                      {line.replace(/^[*-]\s*/, '')}
-                    </p>
-                  ))}
-                </div>
-             </div>
-          </div>
-        )}
 
         <div className="mb-20">
           {data.length > 0 ? (
