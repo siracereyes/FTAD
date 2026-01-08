@@ -4,7 +4,7 @@ import { TARecord } from '../types';
 import { 
   Search, ChevronRight, Activity, Target, AlertCircle, 
   Calendar, Users, FileCheck, Info, MapPin, CheckCircle2, Shield,
-  Filter, Map, Building2
+  Filter, Map, Building2, ClipboardList
 } from 'lucide-react';
 
 interface DataTableProps {
@@ -25,7 +25,7 @@ const DataTable: React.FC<DataTableProps> = ({ records }) => {
   const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
   const [selectedOffice, setSelectedOffice] = useState<string>('all');
   const [selectedRow, setSelectedRow] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'matatag' | 'targets' | 'agreements' | 'signatories' | 'misc'>('matatag');
+  const [activeTab, setActiveTab] = useState<'targets' | 'matatag' | 'agreements' | 'signatories' | 'misc'>('targets');
 
   const filterOptions = useMemo(() => {
     const periods = Array.from(new Set(records.map(r => r.period))).filter(Boolean).sort();
@@ -58,7 +58,7 @@ const DataTable: React.FC<DataTableProps> = ({ records }) => {
                 {filteredRecords.length} MATCHES
               </span>
             </h3>
-            <p className="text-[11px] text-slate-400 mt-2 font-bold uppercase tracking-[0.15em] italic">Precision Filtering Engine v4.2</p>
+            <p className="text-[11px] text-slate-400 mt-2 font-bold uppercase tracking-[0.15em] italic">Technical Assistance Oversight v4.5</p>
           </div>
           
           <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
@@ -135,8 +135,8 @@ const DataTable: React.FC<DataTableProps> = ({ records }) => {
               <th className="px-10 py-6">Reporting Office</th>
               <th className="px-10 py-6">Recipient Entity</th>
               <th className="px-10 py-6">Period</th>
-              <th className="px-10 py-6">Personnel</th>
-              <th className="px-10 py-6 text-center">Data Map</th>
+              <th className="px-10 py-6">Target Objectives</th>
+              <th className="px-10 py-6 text-center">Verification</th>
               <th className="px-10 py-6"></th>
             </tr>
           </thead>
@@ -168,14 +168,16 @@ const DataTable: React.FC<DataTableProps> = ({ records }) => {
                     </div>
                   </td>
                   <td className="px-10 py-7">
-                    <div className="space-y-1.5">
+                    <div className="flex flex-col gap-1.5">
                       <div className="flex items-center gap-2">
-                        <Users size={12} className="text-teal-500" />
-                        <span className="text-[10px] font-black text-slate-800 uppercase tracking-tighter">RCV: {record.taReceiver}</span>
+                        <Target size={14} className="text-indigo-500" />
+                        <span className="text-[11px] font-black text-slate-900 uppercase">{record.targets.length} Total Targets</span>
                       </div>
-                      <div className="flex items-center gap-2 opacity-60">
-                        <Activity size={12} className="text-indigo-400" />
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">PRV: {record.taProvider}</span>
+                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-indigo-600 h-full transition-all duration-500" 
+                          style={{ width: `${(record.targets.filter(t => t.status.toLowerCase().includes('met') || t.status.toLowerCase().includes('complete')).length / (record.targets.length || 1)) * 100}%` }}
+                        ></div>
                       </div>
                     </div>
                   </td>
@@ -201,10 +203,10 @@ const DataTable: React.FC<DataTableProps> = ({ records }) => {
                 {selectedRow === record.id && (
                   <tr>
                     <td colSpan={6} className="p-0 border-y border-slate-200">
-                      <div className="bg-white/80 backdrop-blur-3xl p-12">
+                      <div className="bg-white/95 backdrop-blur-3xl p-12">
                         <div className="flex flex-col lg:flex-row justify-between items-start gap-10 mb-10 border-b border-slate-100 pb-10">
                           <div className="flex gap-8 items-center">
-                            <div className="w-20 h-20 bg-indigo-600 rounded-[2.5rem] flex items-center justify-center text-white shadow-3xl shadow-indigo-600/20">
+                            <div className="w-20 h-20 bg-slate-900 rounded-[2.5rem] flex items-center justify-center text-white shadow-3xl shadow-slate-900/20">
                               <Shield size={40} />
                             </div>
                             <div>
@@ -226,10 +228,10 @@ const DataTable: React.FC<DataTableProps> = ({ records }) => {
                           </div>
                         </div>
 
-                        <div className="flex gap-4 mb-10 bg-slate-50 p-2 rounded-[2rem] w-fit border border-slate-100 overflow-x-auto max-w-full no-scrollbar">
+                        <div className="flex gap-4 mb-10 bg-slate-100 p-2 rounded-[2rem] w-fit border border-slate-200 overflow-x-auto max-w-full no-scrollbar">
                           {[
-                            { id: 'matatag', label: 'Operational (MATATAG)', icon: Activity },
                             { id: 'targets', label: 'Technical Objectives', icon: Target },
+                            { id: 'matatag', label: 'Operational (MATATAG)', icon: Activity },
                             { id: 'agreements', label: 'Commitments & Follow-up', icon: CheckCircle2 },
                             { id: 'signatories', label: 'Verification (Signatories)', icon: Users },
                             { id: 'misc', label: 'System Intel', icon: Info },
@@ -237,7 +239,7 @@ const DataTable: React.FC<DataTableProps> = ({ records }) => {
                             <button
                               key={tab.id}
                               onClick={() => setActiveTab(tab.id as any)}
-                              className={`flex items-center gap-2 px-8 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-500/5 border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+                              className={`flex items-center gap-2 px-8 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-500/10 border border-indigo-200' : 'text-slate-500 hover:text-slate-800'}`}
                             >
                               <tab.icon size={14} />
                               {tab.label}
@@ -246,6 +248,63 @@ const DataTable: React.FC<DataTableProps> = ({ records }) => {
                         </div>
 
                         <div className="animate-in fade-in slide-in-from-bottom-6 duration-500">
+                          {activeTab === 'targets' && (
+                            <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-2xl shadow-slate-900/5">
+                              <table className="w-full text-left border-collapse">
+                                <thead className="bg-slate-900 text-[9px] text-slate-400 font-black uppercase tracking-[0.25em]">
+                                  <tr>
+                                    <th className="px-8 py-6 w-16">#</th>
+                                    <th className="px-8 py-6">Objective of the Target Recipient</th>
+                                    <th className="px-8 py-6">Planned Action</th>
+                                    <th className="px-8 py-6">Target Due Date</th>
+                                    <th className="px-8 py-6">Status Completion</th>
+                                    <th className="px-8 py-6">Help Needed</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {record.targets.length > 0 ? record.targets.map((target, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                      <td className="px-8 py-6">
+                                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-sm">
+                                          {idx + 1}
+                                        </div>
+                                      </td>
+                                      <td className="px-8 py-6">
+                                        <p className="text-[13px] font-black text-slate-900 leading-snug">{target.objective}</p>
+                                      </td>
+                                      <td className="px-8 py-6">
+                                        <p className="text-[12px] text-slate-600 font-medium leading-relaxed">{target.plannedAction || '---'}</p>
+                                      </td>
+                                      <td className="px-8 py-6">
+                                        <div className="flex items-center gap-2 text-indigo-600">
+                                          <Calendar size={12} />
+                                          <span className="text-[11px] font-black uppercase">{target.dueDate || 'N/A'}</span>
+                                        </div>
+                                      </td>
+                                      <td className="px-8 py-6">
+                                        <span className={`text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-tighter ${getStatusColor(target.status)}`}>
+                                          {target.status || 'Pending'}
+                                        </span>
+                                      </td>
+                                      <td className="px-8 py-6">
+                                        <div className="flex items-start gap-2 max-w-[200px]">
+                                          <Info size={12} className="text-slate-400 mt-1 shrink-0" />
+                                          <p className="text-[11px] text-slate-500 font-medium italic">{target.helpNeeded || 'No assistance requested.'}</p>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )) : (
+                                    <tr>
+                                      <td colSpan={6} className="px-10 py-32 text-center text-slate-300 font-black uppercase tracking-widest text-sm">
+                                        No Technical Targets Specified for this intervention.
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
                           {activeTab === 'matatag' && (
                             <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
                               {[
@@ -275,43 +334,6 @@ const DataTable: React.FC<DataTableProps> = ({ records }) => {
                                   </div>
                                 </div>
                               ))}
-                            </div>
-                          )}
-
-                          {activeTab === 'targets' && (
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                              {record.targets.length > 0 ? record.targets.map((target, idx) => (
-                                <div key={idx} className="bg-slate-900 p-10 rounded-[3rem] text-white flex gap-8 relative overflow-hidden">
-                                  <div className="shrink-0 flex flex-col items-center">
-                                    <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center font-black text-2xl border border-white/10 shadow-inner">{idx + 1}</div>
-                                    <div className="h-full w-px bg-white/10 my-6"></div>
-                                  </div>
-                                  <div className="space-y-8 flex-grow">
-                                    <div>
-                                      <h6 className="text-[10px] font-black text-teal-400 uppercase tracking-[0.2em] mb-3">Core Objective</h6>
-                                      <p className="text-lg font-black text-white leading-tight">{target.objective}</p>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-10">
-                                      <div>
-                                        <h6 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Planned Action</h6>
-                                        <p className="text-[13px] text-slate-300 leading-relaxed font-medium">{target.plannedAction}</p>
-                                      </div>
-                                      <div className="space-y-4">
-                                        <div>
-                                          <h6 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Due Date</h6>
-                                          <p className="text-xs font-black text-teal-400">{target.dueDate || 'N/A'}</p>
-                                        </div>
-                                        <div>
-                                          <h6 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Status</h6>
-                                          <p className="text-xs font-black uppercase tracking-widest">{target.status}</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              )) : (
-                                <div className="col-span-2 text-center py-32 bg-slate-50 rounded-[3rem] text-slate-300 font-black uppercase text-sm tracking-[0.3em]">Technical targets not specified.</div>
-                              )}
                             </div>
                           )}
 
