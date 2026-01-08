@@ -1,3 +1,4 @@
+
 export interface MATATAGItem {
   status: string;
   issue: string;
@@ -69,8 +70,7 @@ export interface FTADStats {
 }
 
 /**
- * Account interface for user registry and authentication.
- * Fixes Error in file services/authService.ts on line 2.
+ * Added to fix missing export errors in authService.ts and Login.tsx
  */
 export interface Account {
   username: string;
@@ -81,8 +81,7 @@ export interface Account {
 }
 
 /**
- * UserSession interface for tracking the currently logged-in user.
- * Fixes Error in file services/authService.ts on line 2 and Login.tsx on line 6.
+ * Added to fix missing export errors in authService.ts and Login.tsx
  */
 export interface UserSession {
   username: string;

@@ -1,7 +1,7 @@
+
 import { TARecord, MATATAGItem, TATarget, TAAgreement, Signatory, Account } from "../types";
 
 const BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRGRxkahPOc_CiaRX6ZjXNPsREBUxUsJnhDwtTo8Z55gys2UikNMq4KPCmccnjUPyP_yj0d1AQzepFI/pub?output=csv";
-const ACCOUNTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRGRxkahPOc_CiaRX6ZjXNPsREBUxUsJnhDwtTo8Z55gys2UikNMq4KPCmccnjUPyP_yj0d1AQzepFI/pub?gid=2047814881&single=true&output=csv";
 
 function parseCSVLine(line: string): string[] {
   const result: string[] = [];
@@ -48,41 +48,6 @@ const getRows = async (url: string): Promise<string[]> => {
   return rows;
 };
 
-/**
- * Fetches user accounts from the published registry.
- * Fixes Error in file components/Login.tsx on line 4.
- */
-export const fetchAccounts = async (): Promise<Account[]> => {
-  try {
-    const rows = await getRows(ACCOUNTS_URL);
-    if (rows.length < 2) return [];
-
-    const headers = parseCSVLine(rows[0]).map(h => h.trim().toUpperCase().replace(/[\s_]/g, ''));
-    const findIdx = (name: string) => {
-      const search = name.trim().toUpperCase().replace(/[\s_]/g, '');
-      return headers.indexOf(search);
-    };
-
-    const accounts: Account[] = [];
-    for (let i = 1; i < rows.length; i++) {
-      const v = parseCSVLine(rows[i]);
-      if (v.length < 2) continue;
-      
-      accounts.push({
-        username: v[findIdx("USERNAME")] || "",
-        passwordHash: v[findIdx("PASSWORDHASH")] || v[findIdx("PASSWORD")] || "",
-        sdo: v[findIdx("SDO")] || "",
-        schoolName: v[findIdx("SCHOOLNAME")] || v[findIdx("SCHOOL")] || "",
-        email: v[findIdx("EMAIL")] || ""
-      });
-    }
-    return accounts;
-  } catch (error) {
-    console.error("Fetch Accounts Error:", error);
-    return [];
-  }
-};
-
 export const fetchFTADData = async (): Promise<TARecord[]> => {
   try {
     const rows = await getRows(BASE_URL);
@@ -99,7 +64,6 @@ export const fetchFTADData = async (): Promise<TARecord[]> => {
     if (headerRowIndex === -1) return [];
 
     const rawHeaders = parseCSVLine(rows[headerRowIndex]);
-    // Create a normalized list of headers for fuzzy matching (no spaces, no underscores, uppercase)
     const normalizedHeaders = rawHeaders.map(h => h.trim().toUpperCase().replace(/[\s_]/g, ''));
     
     const findIdx = (name: string) => {
@@ -214,6 +178,58 @@ export const fetchFTADData = async (): Promise<TARecord[]> => {
     return records;
   } catch (error) {
     console.error("Fetch FTAD Data Error:", error);
+    return [];
+  }
+};
+
+/**
+ * Fetches user accounts from the registry for authentication.
+ * Added to fix missing export error in Login.tsx.
+ */
+export const fetchAccounts = async (): Promise<Account[]> => {
+  try {
+    const rows = await getRows(BASE_URL);
+    
+    let headerRowIndex = -1;
+    for (let i = 0; i < Math.min(rows.length, 25); i++) {
+      const cells = parseCSVLine(rows[i]).map(c => c.toUpperCase());
+      if (cells.includes("USERNAME") && (cells.includes("PASSWORDHASH") || cells.includes("PASSWORD"))) {
+        headerRowIndex = i;
+        break;
+      }
+    }
+
+    if (headerRowIndex === -1) return [];
+
+    const rawHeaders = parseCSVLine(rows[headerRowIndex]);
+    const normalizedHeaders = rawHeaders.map(h => h.trim().toUpperCase().replace(/[\s_]/g, ''));
+    
+    const findIdx = (name: string) => {
+      const search = name.trim().toUpperCase().replace(/[\s_]/g, '');
+      return normalizedHeaders.indexOf(search);
+    };
+
+    const accounts: Account[] = [];
+    for (let i = headerRowIndex + 1; i < rows.length; i++) {
+      const v = parseCSVLine(rows[i]);
+      if (v.length < 2) continue;
+
+      const usernameIdx = findIdx("USERNAME");
+      const passIdx = findIdx("PASSWORDHASH") !== -1 ? findIdx("PASSWORDHASH") : findIdx("PASSWORD");
+      
+      if (usernameIdx === -1 || !v[usernameIdx]) continue;
+
+      accounts.push({
+        username: v[usernameIdx],
+        passwordHash: v[passIdx] || "",
+        sdo: v[findIdx("SDO")] || "",
+        schoolName: v[findIdx("SCHOOLNAME")] || v[findIdx("SCHOOL NAME")] || "",
+        email: v[findIdx("EMAIL")] || ""
+      });
+    }
+    return accounts;
+  } catch (error) {
+    console.error("Fetch Accounts Error:", error);
     return [];
   }
 };

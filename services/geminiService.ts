@@ -1,6 +1,12 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { FTADStats } from "../types";
+
+// Declare process for TypeScript to avoid build errors
+declare var process: {
+  env: {
+    API_KEY: string;
+  };
+};
 
 /**
  * Generates strategic insights using Gemini based on FTAD metrics.
@@ -29,7 +35,6 @@ export const getAIInsights = async (stats: FTADStats, topDivisions: any[], topCa
   `;
 
   try {
-    // Fix: Use gemini-3-pro-preview for complex reasoning tasks
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
@@ -39,7 +44,6 @@ export const getAIInsights = async (stats: FTADStats, topDivisions: any[], topCa
       },
     });
 
-    // Access the text property directly on the response object
     return response.text || "No insights generated.";
   } catch (error) {
     console.error("Gemini API Error:", error);

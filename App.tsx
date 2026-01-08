@@ -6,7 +6,7 @@ import StatCard from './components/StatCard';
 import DataTable from './components/DataTable';
 import { 
   RefreshCw, BrainCircuit, Database, Activity, 
-  TrendingUp, ClipboardCheck
+  TrendingUp, ClipboardCheck, Info
 } from 'lucide-react';
 
 const LOGO_URL = "https://depedcaloocan.com/wp-content/uploads/2025/07/webtap.png";
@@ -39,7 +39,6 @@ const App: React.FC = () => {
   const stats: FTADStats = useMemo(() => {
     if (data.length === 0) return { totalTA: 0, completionRate: 0, activeMonitoring: 0, pendingRequests: 0 };
     
-    // Calculate targets based on extracted data
     const allTargets = data.flatMap(d => d.targets).filter(t => t.objective);
     const completedTargets = allTargets.filter(t => {
       const s = t.status?.toLowerCase() || "";
@@ -86,15 +85,6 @@ const App: React.FC = () => {
     setAiLoading(false);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-6 text-slate-400 font-black text-xs uppercase tracking-[0.2em]">Synchronizing Registry...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#FDFDFF] pb-20">
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-100 px-10 py-4">
@@ -112,24 +102,39 @@ const App: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-6">
+            <div className="hidden lg:flex flex-col items-end mr-4">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status</span>
+              <span className="text-[12px] font-black text-emerald-600 leading-tight flex items-center gap-2 uppercase">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                Live Monitoring
+              </span>
+            </div>
+            <div className="h-8 w-px bg-slate-100 mx-2 hidden lg:block"></div>
             <button onClick={loadData} className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all" title="Refresh Data">
-              <RefreshCw size={20} />
+              <RefreshCw size={20} className={loading ? 'animate-spin text-indigo-600' : ''} />
             </button>
           </div>
         </div>
       </nav>
 
       <main className="max-w-[1600px] mx-auto px-10 mt-12">
+        {error && (
+          <div className="mb-8 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 text-rose-600 font-bold uppercase text-xs">
+            <Info size={18} />
+            {error}
+          </div>
+        )}
+
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-10 mb-12">
           <div className="max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Live Registry Stream</span>
+              <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Global Stream</span>
               <span className="text-slate-200">/</span>
-              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Field Monitoring Intelligence</span>
+              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Regional Intelligence</span>
             </div>
             <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">Regional Monitoring Overview</h2>
             <p className="text-lg text-slate-500 font-medium leading-relaxed">
-              Real-time synchronization of Technical Assistance activities across all reporting offices.
+              Real-time synchronization of Technical Assistance activities across the region.
             </p>
           </div>
           <button 
@@ -195,8 +200,17 @@ const App: React.FC = () => {
               <div className="w-24 h-24 bg-slate-50 text-slate-200 rounded-full flex items-center justify-center mb-8">
                 <Database size={48} />
               </div>
-              <h4 className="text-2xl font-black text-slate-900 mb-2">Registry Void</h4>
-              <p className="text-slate-400 font-medium max-w-sm">No operational records found in the current synchronization cycle.</p>
+              {loading ? (
+                <div className="animate-pulse">
+                  <h4 className="text-2xl font-black text-slate-900 mb-2">Syncing Data...</h4>
+                  <p className="text-slate-400 font-medium">Connecting to regional technical assistance records.</p>
+                </div>
+              ) : (
+                <>
+                  <h4 className="text-2xl font-black text-slate-900 mb-2">Registry Void</h4>
+                  <p className="text-slate-400 font-medium max-w-sm">No operational records found in the current synchronization cycle.</p>
+                </>
+              )}
             </div>
           )}
         </div>
