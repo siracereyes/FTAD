@@ -102,7 +102,7 @@ const App: React.FC = () => {
               <img src={LOGO_URL} alt="FTAD Logo" className="h-10 w-auto object-contain" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tighter leading-none uppercase">Field Technical Assistance Division</h1>
+              <h1 className="text-xl font-black text-slate-900 tracking-tighter leading-none uppercase">Deped NCR Region | FTAD</h1>
               <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1 block">
                 Regional Technical Assistance Monitoring Dashboard
               </span>
@@ -136,13 +136,13 @@ const App: React.FC = () => {
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-10 mb-12">
           <div className="max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className="bg-indigo-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">TAP OVERSIGHT</span>
+              <span className="bg-indigo-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">NCR REGION</span>
               <span className="text-slate-200">/</span>
-              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Finalization Tracking</span>
+              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">TAP OVERSIGHT</span>
             </div>
-            <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">Registry Progress</h2>
+            <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">TA Plan Progress</h2>
             <p className="text-lg text-slate-500 font-medium leading-relaxed">
-              Monitoring the completion and finalization status of Technical Assistance Plans (TAP) across all regional units.
+              Monitoring the completion and finalization status of Technical Assistance Plans (TAP) across all NCR regional units.
             </p>
           </div>
         </div>
@@ -190,8 +190,8 @@ const App: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <h4 className="text-2xl font-black text-slate-900 mb-2">Registry Void</h4>
-                  <p className="text-slate-400 font-medium max-w-sm">No operational records found in the current synchronization cycle.</p>
+                  <h4 className="text-2xl font-black text-slate-900 mb-2">Record Void</h4>
+                  <p className="text-slate-400 font-medium max-w-sm">No operational records found in the current synchronization cycle for NCR Region.</p>
                 </>
               )}
             </div>
