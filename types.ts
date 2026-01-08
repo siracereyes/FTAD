@@ -1,3 +1,4 @@
+
 export interface MATATAGItem {
   status: string;
   issue: string;
@@ -9,6 +10,10 @@ export interface TATarget {
   dueDate: string;
   status: string;
   helpNeeded: string;
+  agree?: string;
+  specificOffice?: string;
+  tapDueDate?: string;
+  tapStatus?: string;
 }
 
 export interface TAAgreement {
@@ -68,9 +73,6 @@ export interface FTADStats {
   uniqueEntities: number;
 }
 
-/**
- * Added to fix missing export errors in authService.ts and Login.tsx
- */
 export interface Account {
   username: string;
   passwordHash: string;
@@ -79,9 +81,6 @@ export interface Account {
   email: string;
 }
 
-/**
- * Added to fix missing export errors in authService.ts and Login.tsx
- */
 export interface UserSession {
   username: string;
   sdo: string;

@@ -92,17 +92,26 @@ export const fetchFTADData = async (): Promise<TARecord[]> => {
       const extractTargets = (): TATarget[] => {
         const targets: TATarget[] = [];
         for (let j = 1; j <= 5; j++) {
-          const objIdx = findIdx(`OBJECT OF THE TARGET RECIPIENT ${j}`);
-          const obj = objIdx !== -1 ? v[objIdx] : "";
-          if (!obj) continue;
+          let objIdx = findIdx(`OBJECT OF THE TARGET RECIPIENT ${j}`);
+          if (objIdx === -1) {
+            objIdx = findIdx(`OBJECTIVE OF THE TARGET ${j}`);
+          }
           
-          targets.push({
-            objective: obj,
-            plannedAction: v[findIdx(`PLANEED ACTION ${j}`)] || "",
-            dueDate: v[findIdx(`TARGET DUE DATE ${j}`)] || "",
-            status: v[findIdx(`STATUS COMPLETION ${j}`)] || "",
-            helpNeeded: v[findIdx(`TA NEEDED HELP NEEDED ${j}`)] || ""
-          });
+          const obj = objIdx !== -1 ? v[objIdx] : "";
+          
+          if (obj) {
+            targets.push({
+              objective: obj,
+              plannedAction: v[findIdx(`PLANEED ACTION ${j}`)] || "",
+              dueDate: v[findIdx(`TARGET DUE DATE ${j}`)] || "",
+              status: v[findIdx(`STATUS COMPLETION ${j}`)] || "",
+              helpNeeded: v[findIdx(`TA NEEDED HELP NEEDED ${j}`)] || v[findIdx(`TA NEEDED/HELP NEEDED ${j}`)] || "",
+              agree: v[findIdx(`Agree${j}`)] || "",
+              specificOffice: v[findIdx(`SpecificOffice${j}`)] || "",
+              tapDueDate: v[findIdx(`TAPDueDate${j}`)] || "",
+              tapStatus: v[findIdx(`TAPStatusCompletion${j}`)] || ""
+            });
+          }
         }
         return targets;
       };
