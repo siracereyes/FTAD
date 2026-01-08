@@ -69,8 +69,11 @@ export interface TARecord {
 export interface FTADStats {
   totalInterventions: number;
   resolutionRate: number;
-  totalObjectives: number;
-  uniqueEntities: number;
+  totalTARequests: number;
+  accomplishedTAPs: number;
+  partialTAPs: number;
+  unaccomplishedTAPs: number;
+  pendingTAPs: number;
 }
 
 export interface Account {

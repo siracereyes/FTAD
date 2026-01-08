@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { FTADStats } from "../types";
 
@@ -13,19 +12,16 @@ declare var process: {
  * Generates strategic insights using Gemini based on FTAD metrics.
  */
 export const getAIInsights = async (stats: FTADStats, topDivisions: any[], topCategories: any[]): Promise<string> => {
-  // Use process.env.API_KEY directly as per @google/genai guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  // Fix: Corrected property names from FTADStats interface
   const prompt = `
-    Analyze this Field Technical Assistance Division (FTAD) data. 
-    Focus on operational efficiency, support coverage, and field office compliance.
+    Analyze this Field Technical Assistance Division (FTAD) data focusing on TAP Finalization.
     
     Current Stats:
-    - Total TA Interventions: ${stats.totalInterventions}
-    - Completion Rate: ${stats.resolutionRate.toFixed(1)}%
-    - Active Monitoring: ${stats.totalObjectives}
-    - Pending Requests: ${stats.uniqueEntities}
+    - Total TA Requests: ${stats.totalTARequests}
+    - Total Accomplished (Finalized): ${stats.accomplishedTAPs}
+    - Accomplishment Percentage: ${stats.resolutionRate.toFixed(1)}%
+    - Overall Registry Volume: ${stats.totalInterventions}
     
     Division Engagement:
     ${JSON.stringify(topDivisions)}
@@ -33,7 +29,7 @@ export const getAIInsights = async (stats: FTADStats, topDivisions: any[], topCa
     Thematic Focus Areas:
     ${JSON.stringify(topCategories)}
     
-    Provide 3-4 professional strategic insights. Avoid financial terminology. Focus on 'Support Quality', 'Responsiveness', and 'Gap Analysis'.
+    Provide 3-4 professional strategic insights. Focus on 'Finalization Efficiency', 'Completion Bottlenecks', and 'Service Delivery Quality'.
   `;
 
   try {
@@ -41,15 +37,14 @@ export const getAIInsights = async (stats: FTADStats, topDivisions: any[], topCa
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are a Senior Education and Technical Assistance Consultant. You provide strategic advice to the Field Technical Assistance Division (FTAD) on how to improve support to field offices based on their current performance metrics.",
+        systemInstruction: "You are a Senior Technical Assistance Strategist. You analyze TAP (Technical Assistance Plan) completion data to provide actionable leadership insights for regional education bureaus.",
         temperature: 0.7,
       },
     });
 
-    // Fix: Access .text property directly (not a method)
     return response.text || "No insights generated.";
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "Error generating TA strategic insights. Please check connectivity or API key configurations.";
+    return "Error generating TA strategic insights.";
   }
 };

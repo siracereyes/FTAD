@@ -11,10 +11,10 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, change, isPositive, icon }) => {
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-start justify-between transition-all hover:shadow-md">
+    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-start justify-between transition-all hover:shadow-xl hover:border-indigo-100 group">
       <div>
-        <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-        <h3 className="text-2xl font-bold text-slate-900">{value}</h3>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{title}</p>
+        <h3 className="text-3xl font-black text-slate-900 tracking-tighter">{value}</h3>
         {change && (
           <p className={`text-xs mt-2 font-semibold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
             {isPositive ? '↑' : '↓'} {change}
@@ -22,7 +22,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, change, isPositive, i
           </p>
         )}
       </div>
-      <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600">
+      <div className="p-3 bg-slate-50 group-hover:bg-indigo-50 rounded-2xl transition-colors">
         {icon}
       </div>
     </div>

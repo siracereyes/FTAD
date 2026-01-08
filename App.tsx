@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchFTADData } from './services/dataService';
 import { TARecord, FTADStats } from './types';
@@ -5,7 +6,7 @@ import StatCard from './components/StatCard';
 import DataTable from './components/DataTable';
 import { 
   RefreshCw, Database, Activity, 
-  Target, Building2, Info
+  Target, Building2, Info, CheckCircle2, Clock, AlertCircle, XCircle, Timer
 } from 'lucide-react';
 
 const LOGO_URL = "https://depedcaloocan.com/wp-content/uploads/2025/07/webtap.png";
@@ -34,32 +35,61 @@ const App: React.FC = () => {
   }, []);
 
   const stats: FTADStats = useMemo(() => {
-    if (data.length === 0) return { totalInterventions: 0, resolutionRate: 0, totalObjectives: 0, uniqueEntities: 0 };
+    const defaultStats: FTADStats = { 
+      totalInterventions: 0, 
+      resolutionRate: 0, 
+      totalTARequests: 0, 
+      accomplishedTAPs: 0,
+      partialTAPs: 0,
+      unaccomplishedTAPs: 0,
+      pendingTAPs: 0
+    };
+
+    if (data.length === 0) return defaultStats;
     
-    // 1. Total interventions is just the record count
-    const totalInterventions = data.length;
+    const allTargets = data.flatMap(d => d.targets);
+    // Count all defined technical objectives
+    const totalTARequests = allTargets.filter(t => t.objective).length;
+    
+    let accomplished = 0;
+    let partial = 0;
+    let unaccomplished = 0;
+    let pending = 0;
 
-    // 2. Resolution Rate: check all MATATAG pillars for Met/Complete status
-    const allPillarItems = data.flatMap(d => [
-      ...d.access, ...d.equity, ...d.quality, ...d.resilience, ...d.enabling
-    ]);
-    const resolvedItems = allPillarItems.filter(item => {
-      const s = item.status?.toLowerCase() || "";
-      return s.includes('met') || s.includes('complete') || s.includes('done') || s.includes('yes');
+    allTargets.forEach(t => {
+      if (!t.objective) return;
+      
+      const s = t.tapStatus?.toLowerCase() || "";
+      
+      // Accomplished logic
+      if (s.includes('accomplished') || s.includes('met') || s.includes('complete') || s.includes('done') || s.includes('yes')) {
+        accomplished++;
+      } 
+      // Partial logic
+      else if (s.includes('partial')) {
+        partial++;
+      }
+      // Unaccomplished logic
+      else if (s.includes('unaccomplished') || s.includes('not met') || s.includes('no')) {
+        unaccomplished++;
+      }
+      // Pending / Default logic
+      else {
+        pending++;
+      }
     });
-    const resolutionRate = allPillarItems.length > 0 ? (resolvedItems.length / allPillarItems.length) * 100 : 0;
 
-    // 3. Total Objectives: count all defined technical targets
-    const totalObjectives = data.reduce((acc, d) => acc + d.targets.filter(t => t.objective).length, 0);
-
-    // 4. Unique Entities: number of unique schools/divisions
-    const uniqueEntities = new Set(data.map(d => d.divisionSchool.trim()).filter(Boolean)).size;
+    const resolutionRate = totalTARequests > 0 ? (accomplished / totalTARequests) * 100 : 0;
+    const totalInterventions = data.length;
     
     return {
       totalInterventions,
       resolutionRate,
-      totalObjectives,
-      uniqueEntities
+      totalTARequests,
+      accomplishedTAPs: accomplished,
+      partialTAPs: partial,
+      unaccomplishedTAPs: unaccomplished,
+      pendingTAPs: pending
     };
   }, [data]);
 
@@ -106,38 +136,42 @@ const App: React.FC = () => {
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-10 mb-12">
           <div className="max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Regional Hub</span>
+              <span className="bg-indigo-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">TAP OVERSIGHT</span>
               <span className="text-slate-200">/</span>
-              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Technical Analytics</span>
+              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Finalization Tracking</span>
             </div>
-            <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">Regional Monitoring Overview</h2>
+            <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">Registry Progress</h2>
             <p className="text-lg text-slate-500 font-medium leading-relaxed">
-              Analyzing Technical Assistance interventions across {stats.uniqueEntities} unique institutional entities.
+              Monitoring the completion and finalization status of Technical Assistance Plans (TAP) across all regional units.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-16">
           <StatCard 
-            title="Registry Volume" 
-            value={stats.totalInterventions.toLocaleString()} 
-            icon={<Database size={24} />}
-          />
-          <StatCard 
-            title="Strategic Resolution" 
-            value={`${stats.resolutionRate.toFixed(1)}%`}
-            isPositive={stats.resolutionRate > 70}
-            icon={<Activity size={24} />}
-          />
-          <StatCard 
-            title="Support Objectives" 
-            value={stats.totalObjectives.toString()}
+            title="TA Request" 
+            value={stats.totalTARequests.toString()}
             icon={<Target size={24} />}
           />
           <StatCard 
-            title="Institutional Reach" 
-            value={stats.uniqueEntities.toString()}
-            icon={<Building2 size={24} />}
+            title="Accomplished" 
+            value={stats.accomplishedTAPs.toString()}
+            icon={<CheckCircle2 size={24} className="text-emerald-600" />}
+          />
+          <StatCard 
+            title="Partial" 
+            value={stats.partialTAPs.toString()}
+            icon={<AlertCircle size={24} className="text-amber-600" />}
+          />
+          <StatCard 
+            title="Unaccomplished" 
+            value={stats.unaccomplishedTAPs.toString()}
+            icon={<XCircle size={24} className="text-rose-600" />}
+          />
+          <StatCard 
+            title="Pending" 
+            value={stats.pendingTAPs.toString()}
+            icon={<Timer size={24} className="text-slate-600" />}
           />
         </div>
 
