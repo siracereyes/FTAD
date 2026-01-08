@@ -1,4 +1,3 @@
-
 export interface MATATAGItem {
   status: string;
   issue: string;
@@ -63,10 +62,10 @@ export interface TARecord {
 }
 
 export interface FTADStats {
-  totalTA: number;
-  completionRate: number;
-  activeMonitoring: number;
-  pendingRequests: number;
+  totalInterventions: number;
+  resolutionRate: number;
+  totalObjectives: number;
+  uniqueEntities: number;
 }
 
 /**

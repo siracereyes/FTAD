@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchFTADData } from './services/dataService';
 import { getAIInsights } from './services/geminiService';
@@ -6,7 +7,7 @@ import StatCard from './components/StatCard';
 import DataTable from './components/DataTable';
 import { 
   RefreshCw, BrainCircuit, Database, Activity, 
-  TrendingUp, ClipboardCheck, Info
+  Target, Building2, Info
 } from 'lucide-react';
 
 const LOGO_URL = "https://depedcaloocan.com/wp-content/uploads/2025/07/webtap.png";
@@ -37,20 +38,32 @@ const App: React.FC = () => {
   }, []);
 
   const stats: FTADStats = useMemo(() => {
-    if (data.length === 0) return { totalTA: 0, completionRate: 0, activeMonitoring: 0, pendingRequests: 0 };
+    if (data.length === 0) return { totalInterventions: 0, resolutionRate: 0, totalObjectives: 0, uniqueEntities: 0 };
     
-    const allTargets = data.flatMap(d => d.targets).filter(t => t.objective);
-    const completedTargets = allTargets.filter(t => {
-      const s = t.status?.toLowerCase() || "";
-      return s.includes('complete') || s.includes('done') || s.includes('met') || s.includes('yes');
+    // 1. Total interventions is just the record count
+    const totalInterventions = data.length;
+
+    // 2. Resolution Rate: check all MATATAG pillars for Met/Complete status
+    const allPillarItems = data.flatMap(d => [
+      ...d.access, ...d.equity, ...d.quality, ...d.resilience, ...d.enabling
+    ]);
+    const resolvedItems = allPillarItems.filter(item => {
+      const s = item.status?.toLowerCase() || "";
+      return s.includes('met') || s.includes('complete') || s.includes('done') || s.includes('yes');
     });
-    const pending = allTargets.filter(t => t.status?.toLowerCase().includes('pending'));
+    const resolutionRate = allPillarItems.length > 0 ? (resolvedItems.length / allPillarItems.length) * 100 : 0;
+
+    // 3. Total Objectives: count all defined technical targets
+    const totalObjectives = data.reduce((acc, d) => acc + d.targets.filter(t => t.objective).length, 0);
+
+    // 4. Unique Entities: number of unique schools/divisions
+    const uniqueEntities = new Set(data.map(d => d.divisionSchool.trim()).filter(Boolean)).size;
     
     return {
-      totalTA: data.length,
-      completionRate: allTargets.length > 0 ? (completedTargets.length / allTargets.length) * 100 : 0,
-      activeMonitoring: allTargets.length - completedTargets.length,
-      pendingRequests: pending.length
+      totalInterventions,
+      resolutionRate,
+      totalObjectives,
+      uniqueEntities
     };
   }, [data]);
 
@@ -80,6 +93,7 @@ const App: React.FC = () => {
   const triggerAI = async () => {
     if (data.length === 0) return;
     setAiLoading(true);
+    // Fix: Pass the stats object directly to the getAIInsights service now that field names match.
     const result = await getAIInsights(stats, topDivisions, topCategories);
     setInsights(result);
     setAiLoading(false);
@@ -128,13 +142,13 @@ const App: React.FC = () => {
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-10 mb-12">
           <div className="max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Global Stream</span>
+              <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Regional Hub</span>
               <span className="text-slate-200">/</span>
-              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Regional Intelligence</span>
+              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Technical Analytics</span>
             </div>
             <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">Regional Monitoring Overview</h2>
             <p className="text-lg text-slate-500 font-medium leading-relaxed">
-              Real-time synchronization of Technical Assistance activities across the region.
+              Analyzing Technical Assistance interventions across {stats.uniqueEntities} unique institutional entities.
             </p>
           </div>
           <button 
@@ -149,26 +163,25 @@ const App: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           <StatCard 
-            title="Total Registry Entries" 
-            value={stats.totalTA.toLocaleString()} 
+            title="Registry Volume" 
+            value={stats.totalInterventions.toLocaleString()} 
             icon={<Database size={24} />}
           />
           <StatCard 
-            title="Registry Success Rate" 
-            value={`${stats.completionRate.toFixed(1)}%`}
-            isPositive={stats.completionRate > 75}
-            icon={<TrendingUp size={24} />}
-          />
-          <StatCard 
-            title="Active Operations" 
-            value={stats.activeMonitoring.toString()}
+            title="Strategic Resolution" 
+            value={`${stats.resolutionRate.toFixed(1)}%`}
+            isPositive={stats.resolutionRate > 70}
             icon={<Activity size={24} />}
           />
           <StatCard 
-            title="Pending Requests" 
-            value={stats.pendingRequests.toString()}
-            isPositive={stats.pendingRequests < 5}
-            icon={<ClipboardCheck size={24} />}
+            title="Support Objectives" 
+            value={stats.totalObjectives.toString()}
+            icon={<Target size={24} />}
+          />
+          <StatCard 
+            title="Institutional Reach" 
+            value={stats.uniqueEntities.toString()}
+            icon={<Building2 size={24} />}
           />
         </div>
 

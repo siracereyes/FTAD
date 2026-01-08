@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { FTADStats } from "../types";
 
@@ -15,15 +16,16 @@ export const getAIInsights = async (stats: FTADStats, topDivisions: any[], topCa
   // Use process.env.API_KEY directly as per @google/genai guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
+  // Fix: Corrected property names from FTADStats interface
   const prompt = `
     Analyze this Field Technical Assistance Division (FTAD) data. 
     Focus on operational efficiency, support coverage, and field office compliance.
     
     Current Stats:
-    - Total TA Interventions: ${stats.totalTA}
-    - Completion Rate: ${stats.completionRate.toFixed(1)}%
-    - Active Monitoring: ${stats.activeMonitoring}
-    - Pending Requests: ${stats.pendingRequests}
+    - Total TA Interventions: ${stats.totalInterventions}
+    - Completion Rate: ${stats.resolutionRate.toFixed(1)}%
+    - Active Monitoring: ${stats.totalObjectives}
+    - Pending Requests: ${stats.uniqueEntities}
     
     Division Engagement:
     ${JSON.stringify(topDivisions)}
@@ -44,6 +46,7 @@ export const getAIInsights = async (stats: FTADStats, topDivisions: any[], topCa
       },
     });
 
+    // Fix: Access .text property directly (not a method)
     return response.text || "No insights generated.";
   } catch (error) {
     console.error("Gemini API Error:", error);
