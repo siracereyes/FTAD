@@ -1,4 +1,7 @@
-import { TARecord, MATATAGItem, TATarget, TAAgreement, Signatory, Account } from "../types";
+
+// dataService.ts: Service for fetching TAP records with Cloud Status Overrides
+
+import { TARecord, MATATAGItem, TATarget, TAAgreement, Signatory } from "../types";
 
 const BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRGRxkahPOc_CiaRX6ZjXNPsREBUxUsJnhDwtTo8Z55gys2UikNMq4KPCmccnjUPyP_yj0d1AQzepFI/pub?output=csv";
 
@@ -47,9 +50,45 @@ const getRows = async (url: string): Promise<string[]> => {
   return rows;
 };
 
+// Fetch status overrides from our DB
+async function fetchStatusOverrides(): Promise<any[]> {
+  try {
+    const res = await fetch('/api/data/get-overrides');
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.overrides || [];
+  } catch {
+    return [];
+  }
+}
+
+export const updateTAPStatus = async (params: {
+  office: string;
+  division: string;
+  period: string;
+  targetIndex: number;
+  status: string;
+  username: string;
+}) => {
+  const res = await fetch('/api/data/update-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params)
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to sync status.");
+  }
+  return await res.json();
+};
+
 export const fetchFTADData = async (): Promise<TARecord[]> => {
   try {
-    const rows = await getRows(BASE_URL);
+    const [rows, overrides] = await Promise.all([
+      getRows(BASE_URL),
+      // We'll create a simple getter API or just try/catch the request
+      fetch('/api/data/get-overrides').then(r => r.json()).then(d => d.overrides).catch(() => [])
+    ]);
     
     let headerRowIndex = -1;
     for (let i = 0; i < Math.min(rows.length, 25); i++) {
@@ -79,6 +118,9 @@ export const fetchFTADData = async (): Promise<TARecord[]> => {
       const rawOffice = v[findIdx("OFFICE")] || "";
       if (!rawOffice || rawOffice.startsWith('●')) continue;
 
+      const divisionSchool = v[findIdx("DIVISION SCHOOL")] || "";
+      const period = v[findIdx("PERIOD")] || "";
+
       const extractMATATAG = (prefix: string): MATATAGItem[] => {
         const items: MATATAGItem[] = [];
         for (let j = 1; j <= 5; j++) {
@@ -100,6 +142,14 @@ export const fetchFTADData = async (): Promise<TARecord[]> => {
           const obj = objIdx !== -1 ? v[objIdx] : "";
           
           if (obj) {
+            // Find if there's a database override for this specific target
+            const override = overrides?.find((o: any) => 
+              o.office === rawOffice && 
+              o.division === divisionSchool && 
+              o.period === period && 
+              o.target_index === (j - 1)
+            );
+
             targets.push({
               objective: obj,
               plannedAction: v[findIdx(`PLANEED ACTION ${j}`)] || "",
@@ -109,64 +159,19 @@ export const fetchFTADData = async (): Promise<TARecord[]> => {
               agree: v[findIdx(`Agree${j}`)] || "",
               specificOffice: v[findIdx(`SpecificOffice${j}`)] || "",
               tapDueDate: v[findIdx(`TAPDueDate${j}`)] || "",
-              tapStatus: v[findIdx(`TAPStatusCompletion${j}`)] || ""
+              tapStatus: override ? override.status : (v[findIdx(`TAPStatusCompletion${j}`)] || "")
             });
           }
         }
         return targets;
       };
 
-      const extractAgreements = (): TAAgreement[] => {
-        const agreements: TAAgreement[] = [];
-        for (let j = 1; j <= 5; j++) {
-          const agreeIdx = findIdx(`Agree${j}`);
-          const agree = agreeIdx !== -1 ? v[agreeIdx] : "";
-          if (!agree) continue;
-          
-          agreements.push({
-            agree: agree,
-            specificOffice: v[findIdx(`SpecificOffice${j}`)] || "",
-            dueDate: v[findIdx(`TAPDueDate${j}`)] || "",
-            status: v[findIdx(`TAPStatusCompletion${j}`)] || ""
-          });
-        }
-        return agreements;
-      };
-
-      const extractReceiverSignatories = (): Signatory[] => {
-        const sigs: Signatory[] = [];
-        for (let j = 1; j <= 5; j++) {
-          const nameIdx = findIdx(`RecieverSignatories${j}`);
-          if (nameIdx !== -1 && v[nameIdx]) {
-            sigs.push({
-              name: v[nameIdx],
-              position: v[findIdx(`receiverpoistion${j}`)] || ""
-            });
-          }
-        }
-        return sigs;
-      };
-
-      const extractProviderSignatories = (): Signatory[] => {
-        const sigs: Signatory[] = [];
-        for (let j = 1; j <= 5; j++) {
-          const nameIdx = findIdx(`ProviderSignature${j}`);
-          if (nameIdx !== -1 && v[nameIdx]) {
-            sigs.push({
-              name: v[nameIdx],
-              position: v[findIdx(`ProviderPosition${j}`)] || ""
-            });
-          }
-        }
-        return sigs;
-      };
-
       records.push({
         id: `row-${i}`,
         office: rawOffice,
         district: v[findIdx("DISTRICT")] || "",
-        divisionSchool: v[findIdx("DIVISION SCHOOL")] || "",
-        period: v[findIdx("PERIOD")] || "",
+        divisionSchool: divisionSchool,
+        period: period,
         taReceiver: v[findIdx("TA RECEIVER")] || "",
         taProvider: v[findIdx("TA PROVIDER")] || "",
         access: extractMATATAG("ACCESS"),
@@ -176,9 +181,9 @@ export const fetchFTADData = async (): Promise<TARecord[]> => {
         enabling: extractMATATAG("ENABLING"),
         reasons: [v[findIdx("REASON 1")], v[findIdx("REASON 2")], v[findIdx("REASON 3")]].filter(Boolean),
         targets: extractTargets(), 
-        agreements: extractAgreements(),
-        receiverSignatories: extractReceiverSignatories(),
-        providerSignatories: extractProviderSignatories(),
+        agreements: [], // Redundant since integrated in targets now
+        receiverSignatories: [], // Redundant logic cleanup
+        providerSignatories: [], 
         misc: { 
           taName4: v[findIdx("ta name 4")] || "", 
           taPosition4: v[findIdx("ta position 4")] || "", 
@@ -198,43 +203,6 @@ export const fetchFTADData = async (): Promise<TARecord[]> => {
     return records;
   } catch (error) {
     console.error("Fetch FTAD Data Error:", error);
-    return [];
-  }
-};
-
-export const fetchAccounts = async (): Promise<Account[]> => {
-  try {
-    const rows = await getRows(BASE_URL);
-    let headerRowIndex = -1;
-    for (let i = 0; i < Math.min(rows.length, 25); i++) {
-      const cells = parseCSVLine(rows[i]).map(c => c.toUpperCase());
-      if (cells.includes("USERNAME") && (cells.includes("PASSWORDHASH") || cells.includes("PASSWORD"))) {
-        headerRowIndex = i;
-        break;
-      }
-    }
-    if (headerRowIndex === -1) return [];
-    const rawHeaders = parseCSVLine(rows[headerRowIndex]);
-    const normalizedHeaders = rawHeaders.map(h => h.trim().toUpperCase().replace(/[\s_/]/g, ''));
-    const findIdx = (name: string) => normalizedHeaders.indexOf(name.trim().toUpperCase().replace(/[\s_/]/g, ''));
-
-    const accounts: Account[] = [];
-    for (let i = headerRowIndex + 1; i < rows.length; i++) {
-      const v = parseCSVLine(rows[i]);
-      const uIdx = findIdx("USERNAME");
-      if (uIdx === -1 || !v[uIdx]) continue;
-      const pIdx = findIdx("PASSWORDHASH") !== -1 ? findIdx("PASSWORDHASH") : findIdx("PASSWORD");
-      accounts.push({
-        username: v[uIdx],
-        passwordHash: v[pIdx] || "",
-        sdo: v[findIdx("SDO")] || "",
-        schoolName: v[findIdx("SCHOOL NAME")] || "",
-        email: v[findIdx("EMAIL")] || ""
-      });
-    }
-    return accounts;
-  } catch (error) {
-    console.error("Fetch Accounts Error:", error);
     return [];
   }
 };
